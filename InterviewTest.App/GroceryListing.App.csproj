@@ -61,7 +61,9 @@
     </ApplicationDefinition>
     <Compile Include="HealthIndexColorConverter.cs" />
     <Compile Include="IProductStore.cs" />
+    <Compile Include="Pizza.cs" />
     <Compile Include="ProductAvailabilityChecker.cs" />
+    <Compile Include="ProductController.cs" />
     <Compile Include="ProductStore.cs" />
     <Compile Include="RemoteWorkerSimulator_DO_NOT_TOUCH\RemoteProductWorkerSimulator.cs" />
     <Compile Include="ServiceProvider.cs" />

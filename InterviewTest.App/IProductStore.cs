@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace InterviewTest.App
 {
-	public interface IProductStore
-	{
-		IEnumerable<IProduct> GetProducts();
-		void ap(IProduct product);
-		void rp(Guid productId);
+	public interface IProductStore: IEnumerable<IProduct>
+    {
+		IEnumerable<IProduct> LoadProducts();
+
+		void Add(IProduct product);
+		void Remove(Guid productId);
 
 		//Let's assume we cannot update a product
 		event Action<IProduct> ProductAdded;

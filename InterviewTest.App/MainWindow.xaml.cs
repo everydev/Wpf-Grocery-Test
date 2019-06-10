@@ -18,118 +18,68 @@ using System.Windows.Shapes;
 
 namespace InterviewTest.App
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
-	{
-		private readonly List<IProduct>  _products = new List<IProduct>();
-		private readonly IProductStore _productStore;
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        private readonly IProductStore _productStore;
 
-		public MainWindow()
-		{
-			InitializeComponent();
-			_productStore = ServiceProvider.Instance.ProductStore;
-			_products.AddRange(_productStore.GetProducts());
-			//RefreshProducts();
-			_productStore.ProductAdded += _productStore_ProductAdded;
-			_productStore.ProductRemoved += _productStore_ProductRemoved;	
-		}
-
-		private void _unitprice_PreviewTextInput(object sender, TextCompositionEventArgs e)
-		{
-			Regex regex = new Regex(@"^\d+$");
-			e.Handled = !regex.IsMatch(e.Text);
-		}
-
-		private void button_Click(object sender, RoutedEventArgs e)
-		{
-			String name = _name.Text;
-			int up ;
-			int qty ;
-			IProduct p;
-			if (!String.IsNullOrEmpty(_type.Text) && int.TryParse(_unitprice.Text, out up)  && int.TryParse(_quantity.Text,out qty ))
-			{
-				if (_type.Text == "Vegetable")
-				{
-					p = new Vegetable(name, qty, up);
-				}
-				else
-				{
-
-					p = new Fruit(name, qty, up);
-				}
-				_productStore.ap(p);
-			}
-		}
-
-		private void RefreshProducts()
-		{
-			_productList.Items.Clear();
-			foreach (IProduct product in _products)
-			{
-				_productList.Items.Add(product);
-			}
-		}
-
-		private void _quantity_PreviewTextInput(object sender, TextCompositionEventArgs e)
-		{
-			Regex regex = new Regex(@"^\d+$");
-			e.Handled =!regex.IsMatch(e.Text);
-		}
+        public MainWindow()
+        {
+            InitializeComponent();
+            _productStore = ServiceProvider.Instance.ProductStore;
+        }
+        protected override void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+            ServiceProvider.Instance.ProductStore.LoadProducts();
+            _type.ItemsSource = ServiceProvider.Instance.ProductTypes;
+            _productList.ItemsSource = ServiceProvider.Instance.ProductStore;
+        }
+        private void _unitprice_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex(@"^\d+$");
+            e.Handled = !regex.IsMatch(e.Text);
+        }
 
 
-		private void _productStore_ProductRemoved(Guid obj)
-		{
-			IProduct possibleProduct = _products.FirstOrDefault(p => p.Id == obj);
-			if (possibleProduct != null)
-			{
-				_products.Remove(possibleProduct);
-				RefreshProducts();
-			}
-		}
+        private void btAddProduct(object sender, RoutedEventArgs e)
+        {
+            String name = _name.Text;
+            if (!String.IsNullOrEmpty(_type.Text) && int.TryParse(_unitprice.Text, out int up) && int.TryParse(_quantity.Text, out int qty))
+            {
+                var p = ServiceProvider.Instance.CreateOBject(_type.Text, _name.Text, qty, up);
+                ServiceProvider.Instance.ProductStore.Add(p);
+                _productList.Items.Refresh();
+                //_productList.ItemsSource
+            }
+        }
 
-		private void _productStore_ProductAdded(IProduct obj)
-		{
-			_products.Add(obj);
-			RefreshProducts();
-		}
+        private void _quantity_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex(@"^\d+$");
+            e.Handled = !regex.IsMatch(e.Text);
+        }
 
-		private void Button_Click_1(object sender, RoutedEventArgs e)
-		{
-			List< ProductAvailabilityChecker > checkers = new List<ProductAvailabilityChecker>();
-			List<Thread> t = new List<Thread>();
-			foreach (IProduct p in _products)
-			{
-				ProductAvailabilityChecker productAvailabilityChecker = new ProductAvailabilityChecker(p);
-				checkers.Add(productAvailabilityChecker);
-				Thread thread = new Thread(productAvailabilityChecker.CheckIfAvailable);
-				t.Add(thread);
-				thread.Start();
-			}
-			foreach (Thread thread in t)
-			{
-				thread.Join();
-			}
+        /// <summary>
+        /// Load availbility of products
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnCheckAvailbilities(object sender, RoutedEventArgs e)
+        {
+            ServiceProvider.Instance.CheckAvailibilities();
+            bool anyError = ServiceProvider.Instance.messages.Count > 0;
 
-			StringBuilder sb = new StringBuilder();
-			bool anyError = false;
-			foreach (ProductAvailabilityChecker checker in checkers)
-			{
-				if (!checker.Result)
-				{
-					anyError = true;
-					sb.AppendLine("The product " + checker.Product.Name + " is not available");
-				}
-			}
-			if (!anyError)
-			{
-				MessageBox.Show(this, "Everything is available.");
-			}
-			else
-			{
-				MessageBox.Show(this, sb.ToString());
-			}
-		}
-	}
+            if (!anyError)
+            {
+                MessageBox.Show(this, "Everything is available.");
+            }
+            else
+            {
+                MessageBox.Show(this, string.Join(System.Environment.NewLine, ServiceProvider.Instance.messages.ToArray()));
+            }
+        }
+    }
 }
